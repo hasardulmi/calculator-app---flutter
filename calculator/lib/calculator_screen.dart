@@ -102,7 +102,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       } else if (value == Btn.calculate) {
         calculate();
       } else if (value == Btn.square) {
-        appendValue("√"); // Add √( for square root
+        appendValue("√("); // Add √( for square root
       } else if (value == Btn.minors) {
         toggleSign();
       } else {
@@ -110,6 +110,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       }
     });
   }
+ 
 
   void clearAll() {
     expression = "";
@@ -143,10 +144,9 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     Expression exp = parser.parse(parsedExpression);
     ContextModel contextModel = ContextModel();
 
+    // Evaluate the expression and preserve the result as-is (including negative values)
     double eval = exp.evaluate(EvaluationType.REAL, contextModel);
-
-    // Display absolute value for negative results
-    result = eval.abs().toString();
+    result = eval.toString();
   } catch (e) {
     result = "Error";
   }
