@@ -12,7 +12,8 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String expression = ""; // Stores the input expression
-  String result = "0";    // Stores the result
+  String result = "";    // Stores the result
+  String previousResult = ""; // Store the previous result
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +33,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      expression.isEmpty ? "0" : expression,
+                      expression.isEmpty ? "" : expression, // If expression is empty, show nothing
                       style: const TextStyle(
                           fontSize: 32, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.end,
@@ -105,16 +106,19 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         appendValue("√("); // Add √( for square root
       } else if (value == Btn.minors) {
         toggleSign();
+      } else if (value == Btn.openbracket || value == Btn.closebracket) {
+        // If open or close bracket, treat them as operators
+        appendValue(value);
       } else {
         appendValue(value);
       }
     });
   }
- 
 
   void clearAll() {
     expression = "";
-    result = "0";
+    result = "";
+    previousResult = ""; // Clear the previous result
   }
 
   void delete() {
@@ -127,47 +131,69 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     if (expression == "Error") {
       expression = "";
     }
-    expression += value;
+    if (previousResult.isNotEmpty) {
+      // If there's a previous result, append the new input to it
+      expression = previousResult + value;
+      previousResult = ""; // Clear the stored result after appending
+    } else {
+      expression += value;
+    }
   }
 
   void calculate() {
-  if (expression.isEmpty) return;
+    if (expression.isEmpty) return;
 
-  try {
-    String parsedExpression = expression
-        .replaceAll(Btn.multiply, '*')
-        .replaceAll(Btn.divide, '/')
-        .replaceAll(Btn.per, '/100')
-        .replaceAll("√", "sqrt"); // Replace √ with sqrt
+    try {
+      // Before evaluating, insert '*' if a number is followed by '('
+      expression = insertMultiplicationAfterNumber(expression);
 
-    Parser parser = Parser();
-    Expression exp = parser.parse(parsedExpression);
-    ContextModel contextModel = ContextModel();
+      String parsedExpression = expression
+          .replaceAll(Btn.multiply, '*')
+          .replaceAll(Btn.divide, '/')
+          .replaceAll(Btn.per, '/100')
+          .replaceAll("√", "sqrt"); // Replace √ with sqrt
 
-    // Evaluate the expression and preserve the result as-is (including negative values)
-    double eval = exp.evaluate(EvaluationType.REAL, contextModel);
-    result = eval.toString();
-  } catch (e) {
-    result = "Error";
+      Parser parser = Parser();
+      Expression exp = parser.parse(parsedExpression);
+      ContextModel contextModel = ContextModel();
+
+      double eval = exp.evaluate(EvaluationType.REAL, contextModel);
+      result = eval.toString();
+      previousResult = result; // Store the result to append later
+      expression = ""; // Clear the expression to show only the result
+    } catch (e) {
+      result = "Error";
+      expression = ""; // Clear the expression in case of error
+      previousResult = ""; // Clear the previous result on error
+    }
   }
-}
+
+  // Insert multiplication (*) between a number and '('
+  String insertMultiplicationAfterNumber(String expression) {
+    String result = expression;
+    // Look for a number followed by '(' and add '*' in between
+    final regExp = RegExp(r'(\d)(\()');
+    result = result.replaceAllMapped(regExp, (match) {
+      return '${match.group(1)}*${match.group(2)}';
+    });
+    return result;
+  }
 
   void toggleSign() {
-  if (expression.isNotEmpty) {
-    // Check if the last number is negative and toggle the sign
-    if (expression.startsWith('-')) {
-      // Remove the negative sign
-      expression = expression.substring(1);
+    if (expression.isNotEmpty) {
+      // Check if the last number is negative and toggle the sign
+      if (expression.startsWith('-')) {
+        // Remove the negative sign
+        expression = expression.substring(1);
+      } else {
+        // Add the negative sign
+        expression = "-$expression";
+      }
     } else {
-      // Add the negative sign
-      expression = "-$expression";
+      // If empty, assume "0" and toggle it
+      expression = "-";
     }
-  } else {
-    // If empty, assume "0" and toggle it
-    expression = "-";
   }
-}
-
 
   Color getBtnColor(String value) {
     return [Btn.del, Btn.clr].contains(value)
