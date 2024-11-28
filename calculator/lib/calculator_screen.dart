@@ -29,10 +29,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             icon: const Icon(Icons.history),
             onPressed: showHistory,  // Show history when tapped
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_forever),
-            onPressed: clearHistory,  // Clear history when tapped
-          ),
+          
         ],
       ),
       body: SafeArea(
@@ -88,38 +85,53 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   // Display the history of previous operations
-  void showHistory() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('History'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: history
-                  .map((entry) => ListTile(
-                        title: Text(entry),
-                      ))
-                  .toList(),
-            ),
+ void showHistory() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('History'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: history
+                .map((entry) => ListTile(
+                      title: Text(entry),
+                      onTap: () {
+                        setState(() {
+                          // When a history entry is clicked, append it to the expression
+                          expression += entry.split("=")[0];  // Get only the operation part (before '=')
+                        });
+                        Navigator.pop(context); // Close the history dialog
+                      },
+                    ))
+                .toList(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close the dialog
+            },
+            child: const Text('Close'),
+          ),
+          TextButton(
+            onPressed: () {
+              clearHistory(); // Clear the history when tapped
+              Navigator.pop(context); // Close the dialog after clearing
+            },
+            child: const Text('Clear History'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   // Clear history
   void clearHistory() {
     setState(() {
       history.clear();
     });
-    Navigator.pop(context); // Close the dialog if it's open
   }
 
   Widget buildButton(String value) {
