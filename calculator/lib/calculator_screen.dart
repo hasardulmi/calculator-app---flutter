@@ -12,13 +12,29 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String expression = ""; // Stores the input expression
-  String result = "";    // Stores the result
+  String result = "0";    // Stores the result
   String previousResult = ""; // Store the previous result
+  
+  // History list to store previous operations and results
+  List<String> history = [];
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Calculator'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: showHistory,  // Show history when tapped
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_forever),
+            onPressed: clearHistory,  // Clear history when tapped
+          ),
+        ],
+      ),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -71,6 +87,41 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
+  // Display the history of previous operations
+  void showHistory() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('History'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: history
+                  .map((entry) => ListTile(
+                        title: Text(entry),
+                      ))
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Clear history
+  void clearHistory() {
+    setState(() {
+      history.clear();
+    });
+    Navigator.pop(context); // Close the dialog if it's open
+  }
+
   Widget buildButton(String value) {
     return Padding(
       padding: const EdgeInsets.all(4.0),
@@ -107,7 +158,6 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       } else if (value == Btn.minors) {
         toggleSign();
       } else if (value == Btn.openbracket || value == Btn.closebracket) {
-        // If open or close bracket, treat them as operators
         appendValue(value);
       } else {
         appendValue(value);
@@ -117,7 +167,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   void clearAll() {
     expression = "";
-    result = "";
+    result = "0";
     previousResult = ""; // Clear the previous result
   }
 
@@ -143,23 +193,41 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void calculate() {
     if (expression.isEmpty) return;
 
-    try {
-      // Before evaluating, insert '*' if a number is followed by '('
-      expression = insertMultiplicationAfterNumber(expression);
+    // Handle consecutive parentheses like (89)(85)(96)7 as multiplication
+    expression = handleAdjacentParentheses(expression);
 
+    try {
+      // Check for division 
+      if (expression.contains('/0')) {
+        result = "Undefined"; // Division by zero
+        previousResult = ""; // Clear previous result
+        expression = ""; // Clear expression
+        return; // Exit the method
+      }
+
+      // Insert '*' where necessary, and replace square root symbol
       String parsedExpression = expression
           .replaceAll(Btn.multiply, '*')
           .replaceAll(Btn.divide, '/')
           .replaceAll(Btn.per, '/100')
           .replaceAll("√", "sqrt"); // Replace √ with sqrt
 
+      // Evaluate the expression
       Parser parser = Parser();
       Expression exp = parser.parse(parsedExpression);
       ContextModel contextModel = ContextModel();
 
       double eval = exp.evaluate(EvaluationType.REAL, contextModel);
-      result = eval.toString();
+      if (eval.isInfinite || eval.isNaN) {
+        result = "Undefined";
+      } else {
+        result = eval.toString();
+      }
       previousResult = result; // Store the result to append later
+
+      // Save the expression and result to history
+      history.add("$expression = $result");
+
       expression = ""; // Clear the expression to show only the result
     } catch (e) {
       result = "Error";
@@ -168,14 +236,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     }
   }
 
-  // Insert multiplication (*) between a number and '('
-  String insertMultiplicationAfterNumber(String expression) {
+  // Handle consecutive parentheses by inserting multiplication in between
+  String handleAdjacentParentheses(String expression) {
     String result = expression;
-    // Look for a number followed by '(' and add '*' in between
-    final regExp = RegExp(r'(\d)(\()');
+
+    // This regular expression will match closing bracket followed by opening bracket
+    final regExp = RegExp(r'\)(\()');
     result = result.replaceAllMapped(regExp, (match) {
-      return '${match.group(1)}*${match.group(2)}';
+      return ')*(';  // Add multiplication between parentheses
     });
+
     return result;
   }
 
