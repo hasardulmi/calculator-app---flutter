@@ -1,6 +1,10 @@
 class Btn {
   static const String del = "D";
   static const String clr = "C";
+  static const String openbracket = "(";
+  static const String closebracket = ")";
+  static const String square = "√";
+  static const String minors = "+/-";
   static const String per = "%";
   static const String multiply = "×";
   static const String divide = "÷";
@@ -11,7 +15,7 @@ class Btn {
  
 
   static const String n0 = "0";
-  static const String n1 = "1";
+  static const String n1 = "1"; 
   static const String n2 = "2";
   static const String n3 = "3";
   static const String n4 = "4";
@@ -24,7 +28,10 @@ class Btn {
   static const List<String> buttonValues = [
     del,
     clr,
-  
+    openbracket,
+    closebracket,
+    square,
+    minors,
     per,
     multiply,
     n7,

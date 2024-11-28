@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Calculator',
-      theme: ThemeData.dark(),
+      theme: ThemeData.light(),
       home: const CalculatorScreen() ,
     );
   }
