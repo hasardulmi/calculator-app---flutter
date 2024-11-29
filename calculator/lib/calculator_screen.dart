@@ -12,9 +12,9 @@ class CalculatorScreen extends StatefulWidget {
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
   String expression = ""; // Stores the input expression
-  String result = "0";    // Stores the result
+  String result = "0"; // Stores the result
   String previousResult = ""; // Store the previous result
-  
+
   // History list to store previous operations and results
   List<String> history = [];
 
@@ -27,9 +27,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: showHistory,  // Show history when tapped
+            onPressed: showHistory, // Show history when tapped
           ),
-          
         ],
       ),
       body: SafeArea(
@@ -85,47 +84,47 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   }
 
   // Display the history of previous operations
- void showHistory() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('History'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: history
-                .map((entry) => ListTile(
-                      title: Text(entry),
-                      onTap: () {
-                        setState(() {
-                          // When a history entry is clicked, append it to the expression
-                          expression += entry.split("=")[0];  // Get only the operation part (before '=')
-                        });
-                        Navigator.pop(context); // Close the history dialog
-                      },
-                    ))
-                .toList(),
+  void showHistory() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('History'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: history
+                  .map((entry) => ListTile(
+                        title: Text(entry),
+                        onTap: () {
+                          setState(() {
+                            // When a history entry is clicked, append it to the expression
+                            expression += entry.split("=")[0]; // Get only the operation part (before '=')
+                          });
+                          Navigator.pop(context); // Close the history dialog
+                        },
+                      ))
+                  .toList(),
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close the dialog
-            },
-            child: const Text('Close'),
-          ),
-          TextButton(
-            onPressed: () {
-              clearHistory(); // Clear the history when tapped
-              Navigator.pop(context); // Close the dialog after clearing
-            },
-            child: const Text('Clear History'),
-          ),
-        ],
-      );
-    },
-  );
-}
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                clearHistory(); // Clear the history when tapped
+                Navigator.pop(context); // Close the dialog after clearing
+              },
+              child: const Text('Clear History'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   // Clear history
   void clearHistory() {
@@ -205,11 +204,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   void calculate() {
     if (expression.isEmpty) return;
 
-    // Handle consecutive parentheses like (89)(85)(96)7 as multiplication
-    expression = handleAdjacentParentheses(expression);
-
     try {
-      // Check for division 
+      // Preprocess the expression to handle missing multiplication
+      expression = handleAdjacentParentheses(expression);
+
+      // Check for division by zero
       if (expression.contains('/0')) {
         result = "Undefined"; // Division by zero
         previousResult = ""; // Clear previous result
@@ -252,10 +251,19 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   String handleAdjacentParentheses(String expression) {
     String result = expression;
 
-    // This regular expression will match closing bracket followed by opening bracket
-    final regExp = RegExp(r'\)(\()');
-    result = result.replaceAllMapped(regExp, (match) {
-      return ')*(';  // Add multiplication between parentheses
+    // Insert '*' between a number and an opening bracket (e.g., 8( -> 8*( )
+    result = result.replaceAllMapped(RegExp(r'(\d)(\()'), (match) {
+      return '${match.group(1)}*${match.group(2)}';
+    });
+
+    // Insert '*' between a closing bracket and a number (e.g., )(9 -> )*(9 )
+    result = result.replaceAllMapped(RegExp(r'(\))(\d)'), (match) {
+      return '${match.group(1)}*${match.group(2)}';
+    });
+
+    // Insert '*' between a closing bracket and an opening bracket (e.g., )( -> )*(
+    result = result.replaceAllMapped(RegExp(r'\)(\()'), (match) {
+      return ')*(';
     });
 
     return result;
